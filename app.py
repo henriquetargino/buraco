@@ -34,7 +34,7 @@ with st.sidebar:
 # --- preparação dos dados ---
 
 # lê os dados do Google Sheets no lugar de pd.read_csv()
-service_account_info = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
+service_account_info = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
 scopes = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
