@@ -39,7 +39,7 @@ with st.sidebar:
 service_account_info = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
 creds = Credentials.from_service_account_info(service_account_info)
 gc = gspread.authorize(creds)
-sheet = gc.open("buraco-dados").sheet1  # ou use .worksheet("Página1") se a aba tiver nome diferente
+sheet = gc.open("buraco-dados").sheet1
 df = get_as_dataframe(sheet).dropna(how="all")
 
 df['pontos'] = df['pontos'].astype(str).str.replace('.', '').str.replace(',', '.').astype(float)
