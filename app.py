@@ -6,7 +6,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Buraco", layout="wide", page_icon="🃏")
 
-# --- Sidebar com menu ---
+# --- sidebar ---
 with st.sidebar:
     pagina = option_menu(
         menu_title="Navegação",
@@ -27,7 +27,7 @@ with st.sidebar:
         },
     )
 
-# --- Leitura e preparação dos dados ---
+# --- preparação dos dados ---
 df = pd.read_csv("dados.csv")
 df['pontos'] = df['pontos'].astype(str).str.replace('.', '').str.replace(',', '.').astype(float)
 df['data'] = pd.to_datetime(df['data'], dayfirst=True)
@@ -76,42 +76,42 @@ def calcular_maior_sequencia(nome):
             atual = 0
     return seq_max
 
-# --- Página 1: Estatísticas Gerais ---
+# ---- estatísticas gerais ----
 if pagina == "Estatísticas Gerais":
     st.header("📊 Estatísticas Gerais")
 
-    # Vitórias e total de rodadas
+    # vitórias e total de rodadas
     col1, col2, col3 = st.columns(3)
     col1.metric("🏆 Vitórias de Henrique", vitorias.set_index('jogador').get('vitórias', pd.Series()).get('henrique', 0))
     col2.metric("🏆 Vitórias de Silvana", vitorias.set_index('jogador').get('vitórias', pd.Series()).get('silvana', 0))
     col3.metric("🎯 Total de Rodadas", len(df_vitorias))
 
-    # Diferença de pontos
+    # diferença de pontos
     col4, col5 = st.columns(2)
     col4.metric("🔥 Vitória com maior diferença", f"{int(maior_dif['diferenca'])} pontos ({maior_dif['vencedor'].capitalize()})")
     col5.metric("❗ Vitória com menor diferença", f"{int(menor_dif['diferenca'])} pontos ({menor_dif['vencedor'].capitalize()})")
 
-    # Sequência invicta
+    # sequência invicta
     col6, col7 = st.columns(2)
     col6.metric("📈 Maior sequência invicta - Henrique", calcular_maior_sequencia("henrique"))
     col7.metric("📈 Maior sequência invicta - Silvana", calcular_maior_sequencia("silvana"))
 
-    # Últimas vitórias
+    # ultimas vitórias
     col8, col9 = st.columns(2)
     col8.metric("🕒 Última vitória - Henrique", df_vitorias[df_vitorias['vencedor'] == 'henrique']['data'].max().strftime('%d/%m/%Y'))
     col9.metric("🕒 Última vitória - Silvana", df_vitorias[df_vitorias['vencedor'] == 'silvana']['data'].max().strftime('%d/%m/%Y'))
 
-    # Médias de pontos
+    # médias de pontos
     col10, col11 = st.columns(2)
     col10.metric("📊 Média de pontos por partida - Henrique", round(df[df['jogador'] == 'henrique']['pontos'].mean(), 1))
     col11.metric("📊 Média de pontos por partida - Silvana", round(df[df['jogador'] == 'silvana']['pontos'].mean(), 1))
 
-    # Pontuação máxima
+    # pontuação máxima
     col12, col13 = st.columns(2)
     col12.metric("📈 Maior pontuação em uma rodada - Henrique", int(df[df['jogador'] == 'henrique']['pontos'].max()))
     col13.metric("📈 Maior pontuação em uma rodada - Silvana", int(df[df['jogador'] == 'silvana']['pontos'].max()))
 
-    # Pontuação mínima
+    # pontuação mínima
     col14, col15 = st.columns(2)
     col14.metric("📉 Menor pontuação em uma rodada - Henrique", int(df[df['jogador'] == 'henrique']['pontos'].min()))
     col15.metric("📉 Menor pontuação em uma rodada - Silvana", int(df[df['jogador'] == 'silvana']['pontos'].min()))
@@ -119,7 +119,7 @@ if pagina == "Estatísticas Gerais":
     st.markdown("---")
     st.markdown("### 📈 Estatísticas Avançadas")
 
-    # Aproveitamento
+    # aproveitamento
     total_rodadas = len(df_vitorias)
     aproveitamento_henrique = round((vitorias[vitorias['jogador'] == 'henrique']['vitórias'].values[0] / total_rodadas) * 100, 1)
     aproveitamento_silvana = round((vitorias[vitorias['jogador'] == 'silvana']['vitórias'].values[0] / total_rodadas) * 100, 1)
@@ -128,26 +128,26 @@ if pagina == "Estatísticas Gerais":
     col16.metric("🎯 Aproveitamento", f"{aproveitamento_henrique}%", "Henrique")
     col17.metric("🎯 Aproveitamento", f"{aproveitamento_silvana}%", "Silvana")
 
-    # Dia com mais rodadas
+    # dia com mais rodadas
     rodadas_por_data = df_vitorias['data'].value_counts().reset_index()
     rodadas_por_data.columns = ['data', 'quantidade']
     dia_top = rodadas_por_data.iloc[0]
     st.metric("🗓️ Dia com mais rodadas jogadas", f"{dia_top['data'].strftime('%d/%m')} – {dia_top['quantidade']} rodadas")
 
-    # Jogador com maior pontuação em um único dia
+    # maior pontuação em dia
     df_pontos_dia = df.groupby(['data', 'jogador'])['pontos'].sum().reset_index()
     melhor_dia = df_pontos_dia.sort_values(by='pontos', ascending=False).iloc[0]
     st.markdown(f"💥 **{melhor_dia['jogador'].capitalize()} fez {int(melhor_dia['pontos'])} pontos em {melhor_dia['data'].strftime('%d/%m')}**")
 
-    # Rodadas disputadas
+    # rodadas disputadas
     disputadas = df_vitorias[df_vitorias['diferenca'] < 200]
     st.markdown(f"⚖️ **Rodadas disputadas:** {len(disputadas)} com menos de 200 pontos de diferença")
     
-    # Último vencedor
+    # uultimo vencedor
     ultima_rodada = df_vitorias.sort_values(by='rodada', ascending=False).iloc[0]
     st.markdown(f"🏁 **Último vencedor: {ultima_rodada['vencedor'].capitalize()}** (diferença: {int(ultima_rodada['diferenca'])} pts)")
 
-# --- Página 2: Dashboard Gráfico ---
+# --- dashboard gráfico ---
 if pagina == "Dashboard Gráfico":
     st.header("📈 Dashboard Interativo")
 
@@ -172,23 +172,23 @@ if pagina == "Dashboard Gráfico":
     fig3.update_layout(plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', font_color='white')
     st.plotly_chart(fig3, use_container_width=True)
 
-    # Agrupar vitórias por dia e jogador
+    # agrupar vitórias por dia e jogador
     vitorias_por_dia = df_vitorias.groupby(['data', 'vencedor']).size().reset_index(name='vitorias')
 
-    # Criar estrutura com todos os dias e jogadores
+    # criar estrutura com todos os dias e jogadores
     dias_unicos = pd.date_range(start=df_vitorias['data'].min(), end=df_vitorias['data'].max())
     todos_os_dias = pd.DataFrame([(dia, jogador) for dia in dias_unicos for jogador in df['jogador'].unique()],
                                 columns=['data', 'jogador'])
 
-    # Unir com as vitórias
+    # unir com as vitórias
     df_evolucao = todos_os_dias.merge(vitorias_por_dia, how='left', left_on=['data', 'jogador'], right_on=['data', 'vencedor'])
     df_evolucao['vitorias'] = df_evolucao['vitorias'].fillna(0)
     df_evolucao = df_evolucao.drop(columns=['vencedor'])
 
-    # Acumular vitórias
+    # acumular vitórias
     df_evolucao['vitorias_acumuladas'] = df_evolucao.groupby('jogador')['vitorias'].cumsum()
 
-    # Plotar gráfico corrigido
+    # plotar gráfico corrigido
     st.subheader("Evolução das Vitórias ao Longo do Tempo")
     fig4 = px.line(df_evolucao, x='data', y='vitorias_acumuladas', color='jogador',
                 labels={'data': 'Data', 'vitorias_acumuladas': 'Vitórias Acumuladas', 'jogador': 'Jogador'},
@@ -197,8 +197,8 @@ if pagina == "Dashboard Gráfico":
 
     fig4.update_layout(
         xaxis=dict(
-            tickformat="%d/%m",  # Formato sem hora (ex: 05/04)
-            dtick="D1"           # Mostra todos os dias
+            tickformat="%d/%m",
+            dtick="D1"
         ),
         plot_bgcolor='#0e1117',
         paper_bgcolor='#0e1117',
@@ -207,7 +207,7 @@ if pagina == "Dashboard Gráfico":
 
     st.plotly_chart(fig4, use_container_width=True)
 
-    # Montar histórico completo por rodada
+    # histórico completo por rodada
     historico = []
     for rodada, grupo in df.groupby('rodada'):
         if len(grupo) != 2:
@@ -233,13 +233,13 @@ if pagina == "Dashboard Gráfico":
     st.subheader("Histórico de Vitórias")
     st.dataframe(df_historico, use_container_width=True)
 
-# --- Página 3: Adicionar Partida ---
+# --- adicionar partida ---
 if pagina == "Adicionar Partida":
     st.header("➕ Adicionar Nova Partida")
 
     with st.form("form_partida"):
         data = st.date_input("Data da Partida", value=datetime.today())
-        # Calcula a próxima rodada automaticamente
+        # calcula a próxima rodada automaticamente
         df_csv = pd.read_csv("dados.csv")
         df_csv['rodada'] = pd.to_numeric(df_csv['rodada'], errors='coerce')
         ultima_rodada = int(df_csv['rodada'].max()) if not df_csv['rodada'].isna().all() else 0
@@ -265,11 +265,9 @@ if pagina == "Adicionar Partida":
             'pontos': pontos_henrique,
             'rodada': rodada
         }
-        # Adiciona as novas linhas
+
         df_novos = pd.DataFrame([nova_linha, nova_linha2])
         df_csv = pd.concat([df_csv, df_novos], ignore_index=True)
-
-        # Salva de volta no CSV
         df_csv.to_csv("dados.csv", index=False)
 
         st.success(f"✅ Partida da rodada {rodada} adicionada com sucesso!")
