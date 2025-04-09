@@ -5,6 +5,9 @@ import plotly.express as px
 from datetime import datetime
 import gspread
 from gspread_dataframe import get_as_dataframe, set_with_dataframe # bibliotecas para manipular o Google Sheets
+import json
+import os
+from tempfile import NamedTemporaryFile
 
 st.set_page_config(page_title="Buraco", layout="wide", page_icon="🃏")
 
@@ -32,7 +35,12 @@ with st.sidebar:
 # --- preparação dos dados ---
 
 # lê os dados do Google Sheets no lugar de pd.read_csv()
-gc = gspread.service_account(filename="buraco-456318-77c300e743fe.json")
+service_account_info = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
+with NamedTemporaryFile(mode="w+", delete=False, suffix=".json") as f:
+    json.dump(service_account_info, f)
+    temp_json_path = f.name
+
+gc = gspread.service_account(filename=temp_json_path)
 sheet = gc.open("buraco-dados").sheet1  # ou use .worksheet("Página1") se a aba tiver nome diferente
 df = get_as_dataframe(sheet).dropna(how="all")
 
