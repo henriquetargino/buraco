@@ -44,7 +44,7 @@ gc = gspread.authorize(creds)
 sheet = gc.open("buraco-dados").sheet1
 df = get_as_dataframe(sheet).dropna(how="all")
 
-df['pontos'] = df['pontos'].astype(str).str.replace('.', '', regex=False).str.replace(',', '.', regex=False).astype(float)
+df['pontos'] = pd.to_numeric(df['pontos'], errors='coerce')
 df['data'] = pd.to_datetime(df['data'], dayfirst=True)
 df = df.sort_values(by='rodada')
 rodadas = df.groupby(['rodada'])
