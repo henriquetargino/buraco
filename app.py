@@ -37,7 +37,11 @@ with st.sidebar:
 
 # lê os dados do Google Sheets no lugar de pd.read_csv()
 service_account_info = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
-creds = Credentials.from_service_account_info(service_account_info)
+scopes = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
 gc = gspread.authorize(creds)
 sheet = gc.open("buraco-dados").sheet1
 df = get_as_dataframe(sheet).dropna(how="all")
