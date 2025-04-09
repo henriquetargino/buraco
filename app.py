@@ -36,11 +36,8 @@ with st.sidebar:
 
 # lê os dados do Google Sheets no lugar de pd.read_csv()
 service_account_info = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT"])
-with NamedTemporaryFile(mode="w+", delete=False, suffix=".json") as f:
-    json.dump(service_account_info, f)
-    temp_json_path = f.name
-
-gc = gspread.service_account(filename=temp_json_path)
+creds = Credentials.from_service_account_info(service_account_info)
+gc = gspread.authorize(creds)
 sheet = gc.open("buraco-dados").sheet1  # ou use .worksheet("Página1") se a aba tiver nome diferente
 df = get_as_dataframe(sheet).dropna(how="all")
 
