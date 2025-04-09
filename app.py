@@ -8,6 +8,7 @@ from gspread_dataframe import get_as_dataframe, set_with_dataframe # bibliotecas
 import json
 import os
 from tempfile import NamedTemporaryFile
+from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Buraco", layout="wide", page_icon="🃏")
 
