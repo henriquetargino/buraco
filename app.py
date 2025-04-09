@@ -253,14 +253,14 @@ if pagina == "Adicionar Partida":
 
     if submitted:
         nova_linha = {
-            'data': data.date(),
+            'data': data,
             'jogador': 'silvana',
             'pontos': pontos_silvana,
-            'rodada': rodada
+            'rodada': rodada   
         }
 
         nova_linha2 = {
-            'data': data.date(),
+            'data': data,
             'jogador': 'henrique',
             'pontos': pontos_henrique,
             'rodada': rodada
