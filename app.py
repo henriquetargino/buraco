@@ -3,6 +3,8 @@ from streamlit_option_menu import option_menu
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
+import gspread
+from gspread_dataframe import get_as_dataframe, set_with_dataframe # bibliotecas para manipular o Google Sheets
 
 st.set_page_config(page_title="Buraco", layout="wide", page_icon="🃏")
 
@@ -28,7 +30,12 @@ with st.sidebar:
     )
 
 # --- preparação dos dados ---
-df = pd.read_csv("dados.csv")
+
+# lê os dados do Google Sheets no lugar de pd.read_csv()
+gc = gspread.service_account(filename="buraco-456318-77c300e743fe.json")
+sheet = gc.open("buraco-dados").sheet1  # ou use .worksheet("Página1") se a aba tiver nome diferente
+df = get_as_dataframe(sheet).dropna(how="all")
+
 df['pontos'] = df['pontos'].astype(str).str.replace('.', '').str.replace(',', '.').astype(float)
 df['data'] = pd.to_datetime(df['data'], dayfirst=True)
 df = df.sort_values(by='rodada')
@@ -240,7 +247,7 @@ if pagina == "Adicionar Partida":
     with st.form("form_partida"):
         data = st.date_input("Data da Partida", value=datetime.today())
         # calcula a próxima rodada automaticamente
-        df_csv = pd.read_csv("dados.csv")
+        df_csv = get_as_dataframe(sheet).dropna(how="all")
         df_csv['rodada'] = pd.to_numeric(df_csv['rodada'], errors='coerce')
         ultima_rodada = int(df_csv['rodada'].max()) if not df_csv['rodada'].isna().all() else 0
         rodada = ultima_rodada + 1
@@ -268,6 +275,6 @@ if pagina == "Adicionar Partida":
 
         df_novos = pd.DataFrame([nova_linha, nova_linha2])
         df_csv = pd.concat([df_csv, df_novos], ignore_index=True)
-        df_csv.to_csv("dados.csv", index=False)
+        set_with_dataframe(sheet, df_csv)
 
         st.success(f"✅ Partida da rodada {rodada} adicionada com sucesso!")
