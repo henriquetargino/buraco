@@ -240,7 +240,7 @@ if pagina == "Adicionar Partida":
     with st.form("form_partida"):
         data = st.date_input("Data da Partida", value=datetime.today())
         # calcula a próxima rodada automaticamente
-        df_csv = pd.read_csv(r"C:\Users\Henrique\Desktop\buraco\dados.csv")
+        df_csv = pd.read_csv("dados.csv")
         df_csv['rodada'] = pd.to_numeric(df_csv['rodada'], errors='coerce')
         ultima_rodada = int(df_csv['rodada'].max()) if not df_csv['rodada'].isna().all() else 0
         rodada = ultima_rodada + 1
@@ -253,14 +253,14 @@ if pagina == "Adicionar Partida":
 
     if submitted:
         nova_linha = {
-            'data': data,
+            'data': data.strftime('%d/%m/%Y'),
             'jogador': 'silvana',
             'pontos': pontos_silvana,
             'rodada': rodada   
         }
 
         nova_linha2 = {
-            'data': data,
+            'data': data.strftime('%d/%m/%Y'),
             'jogador': 'henrique',
             'pontos': pontos_henrique,
             'rodada': rodada
