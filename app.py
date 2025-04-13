@@ -261,8 +261,8 @@ if pagina == "Adicionar Partida":
         rodada = ultima_rodada + 1
 
         st.markdown(f"**Número da Rodada:** {rodada}")
-        pontos_silvana = st.number_input("Pontos Silvana", min_value=0, step=10)
-        pontos_henrique = st.number_input("Pontos Henrique", min_value=0, step=10)
+        pontos_silvana = st.number_input("Pontos Silvana", step=5)
+        pontos_henrique = st.number_input("Pontos Henrique", step=5)
 
         submitted = st.form_submit_button("Salvar Partida")
 
