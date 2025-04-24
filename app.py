@@ -7,7 +7,7 @@ import gspread
 from gspread_dataframe import get_as_dataframe, set_with_dataframe # bibliotecas para manipular o Google Sheets
 import json
 from google.oauth2.service_account import Credentials
-
+import pytz
 st.set_page_config(page_title="Buraco", layout="wide", page_icon="🃏")
 
 # --- sidebar ---
@@ -253,7 +253,9 @@ if pagina == "Adicionar Partida":
     st.header("➕ Adicionar Nova Partida")
 
     with st.form("form_partida"):
-        data = st.date_input("Data da Partida", value=datetime.today())
+        fuso_brasilia = pytz.timezone("America/Sao_Paulo")
+        data_brasilia = datetime.now(fuso_brasilia).date()
+        data = st.date_input("Data da Partida", value=data_brasilia)
         # calcula a próxima rodada automaticamente
         df_csv = get_as_dataframe(sheet).dropna(how="all")
         df_csv['rodada'] = pd.to_numeric(df_csv['rodada'], errors='coerce')
