@@ -4,3 +4,4 @@ plotly
 streamlit-option-menu
 gspread
 gspread-dataframe
+pytz
