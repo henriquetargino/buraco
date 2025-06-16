@@ -5,7 +5,6 @@ import plotly.express as px
 from datetime import datetime
 import gspread
 from gspread_dataframe import get_as_dataframe, set_with_dataframe # bibliotecas para manipular o Google Sheets
-import json
 from google.oauth2.service_account import Credentials
 import pytz
 st.set_page_config(page_title="Buraco", layout="wide", page_icon="🃏")
@@ -203,7 +202,6 @@ if pagina == "Dashboard Gráfico":
     # acumular vitórias
     df_evolucao['vitorias_acumuladas'] = df_evolucao.groupby('jogador')['vitorias'].cumsum()
 
-    # plotar gráfico corrigido
     st.subheader("Evolução das Vitórias ao Longo do Tempo")
     fig4 = px.line(df_evolucao, x='data', y='vitorias_acumuladas', color='jogador',
                 labels={'data': 'Data', 'vitorias_acumuladas': 'Vitórias Acumuladas', 'jogador': 'Jogador'},
@@ -212,9 +210,9 @@ if pagina == "Dashboard Gráfico":
 
     fig4.update_layout(
         xaxis=dict(
-            tickformat="%d/%m",
-            dtick="D1"
+            tickformat="%d/%m"
         ),
+        xaxis_tickangle=-45,
         plot_bgcolor='#0e1117',
         paper_bgcolor='#0e1117',
         font_color='white'
