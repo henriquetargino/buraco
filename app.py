@@ -284,12 +284,15 @@ if pagina == "Adicionar Partida":
                 "Data da Partida", 
                 value=datetime.now(pytz.timezone("America/Sao_Paulo")).date()
             )
-            pontos_henrique = st.number_input("Pontos Henrique", step=5, min_value=0)
+            pontos_henrique = st.number_input("Pontos Henrique", step=5)
         
         with col2:
-            st.write("") 
-            st.write("")
-            pontos_silvana = st.number_input("Pontos Silvana", step=5, min_value=0)
+            data_silvana = st.date_input(
+                "Data da Partida (Silvana)", 
+                value=datetime.now(pytz.timezone("America/Sao_Paulo")).date(),
+                label_visibility="hidden"
+            )
+            pontos_silvana = st.number_input("Pontos Silvana", step=5)
 
         st.markdown("---")
         password = st.text_input("Digite a senha para confirmar", type="password")
