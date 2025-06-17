@@ -7,6 +7,7 @@ import gspread
 from gspread_dataframe import get_as_dataframe, set_with_dataframe # bibliotecas para manipular o Google Sheets
 from google.oauth2.service_account import Credentials
 import pytz
+import time
 
 # layout da página
 st.set_page_config(
@@ -223,8 +224,26 @@ if pagina == "Dashboard Gráfico":
     df_evolucao['vitorias_acumuladas'] = df_evolucao.groupby('jogador')['vitorias'].cumsum()
 
     st.subheader("Evolução das Vitórias ao Longo do Tempo")
-    fig4 = px.line(df_evolucao, x='data', y='vitorias_acumuladas', color='jogador',
-                labels={'data': 'Data', 'vitorias_acumuladas': 'Vitórias Acumuladas', 'jogador': 'Jogador'},
+
+    vitorias_por_dia = df_vitorias.groupby(['data', 'vencedor']).size().reset_index(name='vitorias')
+
+    df_pivot = vitorias_por_dia.pivot_table(index='data', columns='vencedor', values='vitorias', fill_value=0)
+
+    for jogador in df['jogador'].unique():
+        if jogador not in df_pivot.columns:
+            df_pivot[jogador] = 0
+
+    df_acumulado = df_pivot.cumsum()
+
+    df_evolucao_corrigido = df_acumulado.reset_index().melt(
+        id_vars=['data'],
+        value_vars=df_acumulado.columns,
+        var_name='jogador',
+        value_name='vitorias_acumuladas'
+    )
+
+    fig4 = px.line(df_evolucao_corrigido, x='data', y='vitorias_acumuladas', color='jogador',
+                labels={'data': 'Data da Partida', 'vitorias_acumuladas': 'Vitórias Acumuladas', 'jogador': 'Jogador'},
                 color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77'},
                 markers=True)
 
@@ -278,21 +297,13 @@ if pagina == "Adicionar Partida":
     with st.form("form_partida", clear_on_submit=True):
         st.markdown(f"#### Rodada Atual: {proxima_rodada}")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            data = st.date_input(
-                "Data da Partida", 
-                value=datetime.now(pytz.timezone("America/Sao_Paulo")).date()
-            )
-            pontos_henrique = st.number_input("Pontos Henrique", step=5)
+        data = st.date_input(
+            "Data da Partida", 
+            value=datetime.now(pytz.timezone("America/Sao_Paulo")).date()
+        )
         
-        with col2:
-            data_silvana = st.date_input(
-                "Data da Partida (Silvana)", 
-                value=datetime.now(pytz.timezone("America/Sao_Paulo")).date(),
-                label_visibility="hidden"
-            )
-            pontos_silvana = st.number_input("Pontos Silvana", step=5)
+        pontos_henrique = st.number_input("Pontos Henrique", step=5)
+        pontos_silvana = st.number_input("Pontos Silvana", step=5)
 
         st.markdown("---")
         password = st.text_input("Digite a senha para confirmar", type="password")
@@ -302,7 +313,8 @@ if pagina == "Adicionar Partida":
     if submitted:
         if password == st.secrets["APP_SECRETS"]["password"]:
             try:
-                st.info("Conectando e salvando a partida...")
+
+                progress_bar = st.progress(0, text="Salvando...")
 
                 service_account_info = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
                 scopes = [
@@ -312,8 +324,10 @@ if pagina == "Adicionar Partida":
                 creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
                 gc = gspread.authorize(creds)
                 worksheet_para_escrever = gc.open("buraco-dados").sheet1
+                progress_bar.progress(25, text="Conexão com Google Sheets estabelecida...")
 
                 sheet_data = get_as_dataframe(worksheet_para_escrever).dropna(how="all")
+                progress_bar.progress(50, text="Dados atuais lidos com sucesso...")
 
                 nova_linha_henrique = {
                     'data': data.strftime('%d/%m/%Y'),
@@ -327,18 +341,22 @@ if pagina == "Adicionar Partida":
                     'pontos': pontos_silvana,
                     'rodada': proxima_rodada   
                 }
-
                 df_novos = pd.DataFrame([nova_linha_henrique, nova_linha_silvana])
                 df_final = pd.concat([sheet_data, df_novos], ignore_index=True)
                 set_with_dataframe(worksheet_para_escrever, df_final)
+                progress_bar.progress(75, text="Nova partida salva na planilha...")
 
-                st.cache_data.clear()
-                
-                st.success(f"✅ Partida da rodada {proxima_rodada} adicionada com sucesso!")
+                st.cache_data.clear() #
+                progress_bar.progress(100, text="Finalizado!")
+              
+                time.sleep(1)
+                progress_bar.empty()
+
+                st.success(f"✅ Partida da rodada {proxima_rodada} adicionada com sucesso!") #
                 st.balloons()
 
             except Exception as e:
                 st.error(f"Ocorreu um erro ao salvar: {e}")
-        # if senha != st.secrets["APP_SECRETS"]["password"]:
         else:
             st.error("Senha incorreta. A partida não foi salva.")
+
