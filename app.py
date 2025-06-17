@@ -7,7 +7,21 @@ import gspread
 from gspread_dataframe import get_as_dataframe, set_with_dataframe # bibliotecas para manipular o Google Sheets
 from google.oauth2.service_account import Credentials
 import pytz
-st.set_page_config(page_title="Buraco", layout="wide", page_icon="🃏")
+
+# layout da página
+st.set_page_config(
+    page_title="Estatísticas do Buraco",
+    page_icon="🃏",
+    layout="wide", 
+    initial_sidebar_state="expanded",
+    menu_items={  # tres pontinhos
+        'Get Help': 'mailto:henriquetarginoalbuquerque@gmail.com',
+        'Report a bug': 'mailto:henriquetarginoalbuquerque@gmail.com',
+        'About': """# Estatísticas Buraco\n\n https://www.linkedin.com/in/henriquetargino/\n\n 
+        Esta aplicação foi desenvolvida por Henrique Targino, estudante de Ciência de Dados. \n\n 
+        A ideia é acompanhar as estatísticas do jogo de Buraco entre Henrique e Silvana, mantendo um registro das vitórias, derrotas e outras métricas relevantes."""
+    }
+)
 
 # --- sidebar ---
 with st.sidebar:
@@ -30,18 +44,24 @@ with st.sidebar:
         },
     )
 
+
 # --- preparação dos dados ---
 
-# lê os dados do Google Sheets no lugar de pd.read_csv()
-service_account_info = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
-scopes = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
-creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
-gc = gspread.authorize(creds)
-sheet = gc.open("buraco-dados").sheet1
-df = get_as_dataframe(sheet).dropna(how="all")
+# dados com cache para evitar múltiplas requisicoes
+@st.cache_data(ttl=600) # 10 minutos de cache
+def load_data():
+    service_account_info = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sheet = gc.open("buraco-dados").sheet1
+    df = get_as_dataframe(sheet).dropna(how="all")
+    return df
+
+df = load_data()
 
 df['pontos'] = pd.to_numeric(df['pontos'], errors='coerce')
 df['data'] = pd.to_datetime(df['data'], dayfirst=True)
@@ -250,39 +270,72 @@ if pagina == "Dashboard Gráfico":
 if pagina == "Adicionar Partida":
     st.header("➕ Adicionar Nova Partida")
 
-    with st.form("form_partida"):
-        fuso_brasilia = pytz.timezone("America/Sao_Paulo")
-        data_brasilia = datetime.now(fuso_brasilia).date()
-        data = st.date_input("Data da Partida", value=data_brasilia)
-        # calcula a próxima rodada automaticamente
-        df_csv = get_as_dataframe(sheet).dropna(how="all")
-        df_csv['rodada'] = pd.to_numeric(df_csv['rodada'], errors='coerce')
-        ultima_rodada = int(df_csv['rodada'].max()) if not df_csv['rodada'].isna().all() else 0
-        rodada = ultima_rodada + 1
+    df_cached = df.copy()
+    df_cached['rodada'] = pd.to_numeric(df_cached['rodada'], errors='coerce')
+    ultima_rodada = int(df_cached['rodada'].max()) if not df_cached['rodada'].isna().all() else 0
+    proxima_rodada = ultima_rodada + 1
 
-        st.markdown(f"**Número da Rodada:** {rodada}")
-        pontos_silvana = st.number_input("Pontos Silvana", step=5)
-        pontos_henrique = st.number_input("Pontos Henrique", step=5)
+    with st.form("form_partida", clear_on_submit=True):
+        st.markdown(f"#### Rodada Atual: {proxima_rodada}")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            data = st.date_input(
+                "Data da Partida", 
+                value=datetime.now(pytz.timezone("America/Sao_Paulo")).date()
+            )
+            pontos_henrique = st.number_input("Pontos Henrique", step=5, min_value=0)
+        
+        with col2:
+            st.write("") 
+            st.write("")
+            pontos_silvana = st.number_input("Pontos Silvana", step=5, min_value=0)
 
+        st.markdown("---")
+        password = st.text_input("Digite a senha para confirmar", type="password")
         submitted = st.form_submit_button("Salvar Partida")
 
+    # if senha = st.secrets["APP_SECRETS"]["password"]:
     if submitted:
-        nova_linha = {
-            'data': data.strftime('%d/%m/%Y'),
-            'jogador': 'silvana',
-            'pontos': pontos_silvana,
-            'rodada': rodada   
-        }
+        if password == st.secrets["APP_SECRETS"]["password"]:
+            try:
+                st.info("Conectando e salvando a partida...")
 
-        nova_linha2 = {
-            'data': data.strftime('%d/%m/%Y'),
-            'jogador': 'henrique',
-            'pontos': pontos_henrique,
-            'rodada': rodada
-        }
+                service_account_info = st.secrets["GOOGLE_SERVICE_ACCOUNT"]
+                scopes = [
+                    "https://www.googleapis.com/auth/spreadsheets",
+                    "https://www.googleapis.com/auth/drive"
+                ]
+                creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+                gc = gspread.authorize(creds)
+                worksheet_para_escrever = gc.open("buraco-dados").sheet1
 
-        df_novos = pd.DataFrame([nova_linha, nova_linha2])
-        df_csv = pd.concat([df_csv, df_novos], ignore_index=True)
-        set_with_dataframe(sheet, df_csv)
+                sheet_data = get_as_dataframe(worksheet_para_escrever).dropna(how="all")
 
-        st.success(f"✅ Partida da rodada {rodada} adicionada com sucesso!")
+                nova_linha_henrique = {
+                    'data': data.strftime('%d/%m/%Y'),
+                    'jogador': 'henrique',
+                    'pontos': pontos_henrique,
+                    'rodada': proxima_rodada
+                }
+                nova_linha_silvana = {
+                    'data': data.strftime('%d/%m/%Y'),
+                    'jogador': 'silvana',
+                    'pontos': pontos_silvana,
+                    'rodada': proxima_rodada   
+                }
+
+                df_novos = pd.DataFrame([nova_linha_henrique, nova_linha_silvana])
+                df_final = pd.concat([sheet_data, df_novos], ignore_index=True)
+                set_with_dataframe(worksheet_para_escrever, df_final)
+
+                st.cache_data.clear()
+                
+                st.success(f"✅ Partida da rodada {proxima_rodada} adicionada com sucesso!")
+                st.balloons()
+
+            except Exception as e:
+                st.error(f"Ocorreu um erro ao salvar: {e}")
+        # if senha != st.secrets["APP_SECRETS"]["password"]:
+        else:
+            st.error("Senha incorreta. A partida não foi salva.")
