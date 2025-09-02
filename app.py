@@ -111,6 +111,15 @@ def calcular_maior_sequencia(nome):
             atual = 0
     return seq_max
 
+def calcular_sequencia(nome):
+    seq = 0
+    for vencedor in df_vitorias['vencedor']:
+        if vencedor == nome:
+            seq += 1
+        else:
+            seq = 0
+    return seq
+
 # ---- estatísticas gerais ----
 if pagina == "Estatísticas Gerais":
     st.header("📊 Estatísticas Gerais")
@@ -177,10 +186,14 @@ if pagina == "Estatísticas Gerais":
     # rodadas disputadas
     disputadas = df_vitorias[df_vitorias['diferenca'] < 200]
     st.markdown(f"⚖️ **Rodadas disputadas:** {len(disputadas)} com menos de 200 pontos de diferença")
-    
-    # uultimo vencedor
+
+    # ultimo vencedor
     ultima_rodada = df_vitorias.sort_values(by='rodada', ascending=False).iloc[0]
     st.markdown(f"🏁 **Último vencedor: {ultima_rodada['vencedor'].capitalize()}** (diferença: {int(ultima_rodada['diferenca'])} pts)")
+    
+    # sequencia atual
+    sequencia_atual = df_vitorias.sort_values(by='rodada', ascending=False).iloc[0]
+    st.markdown(f"🦆 **Sequência atual: {calcular_sequencia(sequencia_atual['vencedor'])} vitórias de {sequencia_atual['vencedor'].capitalize()}**")
 
 # --- dashboard gráfico ---
 if pagina == "Dashboard Gráfico":
@@ -225,9 +238,9 @@ if pagina == "Dashboard Gráfico":
 
     st.subheader("Evolução das Vitórias ao Longo do Tempo")
 
-    vitorias_por_dia = df_vitorias.groupby(['data', 'vencedor']).size().reset_index(name='vitorias')
+    vitorias_por_dia = df_vitorias.groupby(['rodada', 'vencedor']).size().reset_index(name='vitorias')
 
-    df_pivot = vitorias_por_dia.pivot_table(index='data', columns='vencedor', values='vitorias', fill_value=0)
+    df_pivot = vitorias_por_dia.pivot_table(index='rodada', columns='vencedor', values='vitorias', fill_value=0)
 
     for jogador in df['jogador'].unique():
         if jogador not in df_pivot.columns:
@@ -236,14 +249,14 @@ if pagina == "Dashboard Gráfico":
     df_acumulado = df_pivot.cumsum()
 
     df_evolucao_corrigido = df_acumulado.reset_index().melt(
-        id_vars=['data'],
+        id_vars=['rodada'],
         value_vars=df_acumulado.columns,
         var_name='jogador',
         value_name='vitorias_acumuladas'
     )
 
-    fig4 = px.line(df_evolucao_corrigido, x='data', y='vitorias_acumuladas', color='jogador',
-                labels={'data': 'Data da Partida', 'vitorias_acumuladas': 'Vitórias Acumuladas', 'jogador': 'Jogador'},
+    fig4 = px.line(df_evolucao_corrigido, x='rodada', y='vitorias_acumuladas', color='jogador',
+                labels={'rodada': 'Rodada da Partida', 'vitorias_acumuladas': 'Vitórias Acumuladas', 'jogador': 'Jogador'},
                 color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77'},
                 markers=True)
 
