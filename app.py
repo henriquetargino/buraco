@@ -175,8 +175,13 @@ if pagina == "Estatísticas Gerais":
     # dia com mais rodadas
     rodadas_por_data = df_vitorias['data'].value_counts().reset_index()
     rodadas_por_data.columns = ['data', 'quantidade']
+    
+    # ordenacao do dia mais proximo
+    hoje = pd.Timestamp(datetime.now().date())
+    rodadas_por_data['distancia'] = (rodadas_por_data['data'] - hoje).abs()
+    rodadas_por_data = rodadas_por_data.sort_values(['quantidade', 'distancia'], ascending=[False, True])
     dia_top = rodadas_por_data.iloc[0]
-    st.metric("🗓️ Dia com mais rodadas jogadas", f"{dia_top['data'].strftime('%d/%m')} – {dia_top['quantidade']} rodadas")
+    st.metric("🗓️ Dia com mais partidas jogadas", f"{dia_top['data'].strftime('%d/%m')} – {dia_top['quantidade']} rodadas")
 
     # maior pontuação em dia
     df_pontos_dia = df.groupby(['data', 'jogador'])['pontos'].sum().reset_index()
