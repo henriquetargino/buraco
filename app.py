@@ -200,7 +200,7 @@ if pagina == "Estatísticas Gerais":
     st.markdown(f"💥 **{melhor_dia['jogador'].capitalize()} fez {int(melhor_dia['pontos'])} pontos em {melhor_dia['data'].strftime('%d/%m')}**")
 
     # rodadas disputadas
-    disputadas = df_vitorias[df_vitorias['diferenca'] < 200]
+    disputadas = df_vitorias[df_vitorias['diferenca'] > 0][df_vitorias['diferenca'] < 200]
     st.markdown(f"⚖️ **Rodadas disputadas:** {len(disputadas)} com menos de 200 pontos de diferença")
 
     # ultimo vencedor
@@ -230,14 +230,15 @@ if pagina == "Dashboard Gráfico":
 
     st.subheader("Vitórias por Jogador")
     fig2 = px.bar(vitorias, x='jogador', y='vitórias', color='jogador',
-                  color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77'},
+                  color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77', 'empate': '#888888'},
                   text='vitórias')
     fig2.update_layout(plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', font_color='white')
     st.plotly_chart(fig2, use_container_width=True)
 
+    df_vitorias_sem_empate = df_vitorias[df_vitorias['diferenca'] > 0]
     st.subheader("Diferença de Pontos por Rodada")
-    fig3 = px.bar(df_vitorias, x='rodada', y='diferenca', color='vencedor',
-                color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77', 'empate': '#888888'},
+    fig3 = px.bar(df_vitorias_sem_empate, x='rodada', y='diferenca', color='vencedor',
+                color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77'},
                 text='diferenca')
 
     fig3.update_layout(plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', font_color='white')
