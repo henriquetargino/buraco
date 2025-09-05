@@ -79,9 +79,12 @@ for rodada, grupo in rodadas:
     if jogador_1['pontos'] > jogador_2['pontos']:
         vencedor = jogador_1['jogador']
         diferenca = jogador_1['pontos'] - jogador_2['pontos']
-    else:
+    elif jogador_2['pontos'] > jogador_1['pontos']:
         vencedor = jogador_2['jogador']
         diferenca = jogador_2['pontos'] - jogador_1['pontos']
+    else:
+        vencedor = 'empate'
+        diferenca = 0
     vencedores.append(vencedor)
     diferencas.append(diferenca)
     datas_rodadas.append(grupo['data'].iloc[0])
@@ -98,8 +101,8 @@ df_vitorias['data'] = df_vitorias['data'].dt.normalize()
 vitorias = df_vitorias['vencedor'].value_counts().reset_index()
 vitorias.columns = ['jogador', 'vitórias']
 pontos_totais = df.groupby('jogador')['pontos'].sum().reset_index()
-maior_dif = df_vitorias.loc[df_vitorias['diferenca'].idxmax()]
-menor_dif = df_vitorias.loc[df_vitorias['diferenca'].idxmin()]
+maior_dif = df_vitorias[df_vitorias['diferenca'] > 0].loc[df_vitorias['diferenca'].idxmax()]
+menor_dif = df_vitorias[df_vitorias['diferenca'] > 0].loc[df_vitorias['diferenca'].idxmin()]
 
 def calcular_maior_sequencia(nome):
     seq_max = atual = 0
@@ -124,11 +127,13 @@ def calcular_sequencia(nome):
 if pagina == "Estatísticas Gerais":
     st.header("📊 Estatísticas Gerais")
 
-    # vitórias e total de rodadas
-    col1, col2, col3 = st.columns(3)
+    # vitórias, empates e total de rodadas
+    col1, col2, col3, col4 = st.columns(4)
+
     col1.metric("🏆 Vitórias de Henrique", vitorias.set_index('jogador').get('vitórias', pd.Series()).get('henrique', 0))
     col2.metric("🏆 Vitórias de Silvana", vitorias.set_index('jogador').get('vitórias', pd.Series()).get('silvana', 0))
-    col3.metric("🎯 Total de Rodadas", len(df_vitorias))
+    col3.metric("🤝 Empates", vitorias.set_index('jogador').get('vitórias', pd.Series()).get('empate', 0))
+    col4.metric("🎯 Total de Rodadas", len(df_vitorias))
 
     # diferença de pontos
     col4, col5 = st.columns(2)
@@ -142,8 +147,11 @@ if pagina == "Estatísticas Gerais":
 
     # ultimas vitórias
     col8, col9 = st.columns(2)
-    col8.metric("🕒 Última vitória - Henrique", df_vitorias[df_vitorias['vencedor'] == 'henrique']['data'].max().strftime('%d/%m/%Y'))
-    col9.metric("🕒 Última vitória - Silvana", df_vitorias[df_vitorias['vencedor'] == 'silvana']['data'].max().strftime('%d/%m/%Y'))
+    ult_vit_h = df_vitorias[df_vitorias['vencedor'] == 'henrique']['data'].max()
+    col8.metric("🕒 Última vitória - Henrique", ult_vit_h.strftime('%d/%m/%Y') if pd.notnull(ult_vit_h) else "Nenhuma vitória")
+
+    ult_vit_s = df_vitorias[df_vitorias['vencedor'] == 'silvana']['data'].max()
+    col9.metric("🕒 Última vitória - Silvana", ult_vit_s.strftime('%d/%m/%Y') if pd.notnull(ult_vit_s) else "Nenhuma vitória")
 
     # médias de pontos
     col10, col11 = st.columns(2)
@@ -165,8 +173,10 @@ if pagina == "Estatísticas Gerais":
 
     # aproveitamento
     total_rodadas = len(df_vitorias)
-    aproveitamento_henrique = round((vitorias[vitorias['jogador'] == 'henrique']['vitórias'].values[0] / total_rodadas) * 100, 1)
-    aproveitamento_silvana = round((vitorias[vitorias['jogador'] == 'silvana']['vitórias'].values[0] / total_rodadas) * 100, 1)
+    vit_h = vitorias[vitorias['jogador'] == 'henrique']['vitórias'].values[0] if not vitorias[vitorias['jogador'] == 'henrique'].empty else 0
+    aproveitamento_henrique = round((vit_h / total_rodadas) * 100, 1)
+    vit_s = vitorias[vitorias['jogador'] == 'silvana']['vitórias'].values[0] if not vitorias[vitorias['jogador'] == 'silvana'].empty else 0
+    aproveitamento_silvana = round((vit_s / total_rodadas) * 100, 1)
 
     col16, col17 = st.columns(2)
     col16.metric("🎯 Aproveitamento", f"{aproveitamento_henrique}%", "Henrique")
@@ -194,11 +204,17 @@ if pagina == "Estatísticas Gerais":
 
     # ultimo vencedor
     ultima_rodada = df_vitorias.sort_values(by='rodada', ascending=False).iloc[0]
-    st.markdown(f"🏁 **Último vencedor: {ultima_rodada['vencedor'].capitalize()}** (diferença: {int(ultima_rodada['diferenca'])} pts)")
+    if ultima_rodada['vencedor'] != 'empate':
+        st.markdown(f"🏁 **Último vencedor: {ultima_rodada['vencedor'].capitalize()}** (diferença: {int(ultima_rodada['diferenca'])} pts)")
+    else:
+        st.markdown("🏁 **Último resultado: Empate**")
     
     # sequencia atual
     sequencia_atual = df_vitorias.sort_values(by='rodada', ascending=False).iloc[0]
-    st.markdown(f"🦆 **Sequência atual: {calcular_sequencia(sequencia_atual['vencedor'])} vitórias de {sequencia_atual['vencedor'].capitalize()}**")
+    if sequencia_atual['vencedor'] != 'empate':
+        st.markdown(f"🦆 **Sequência atual: {calcular_sequencia(sequencia_atual['vencedor'])} vitórias de {sequencia_atual['vencedor'].capitalize()}**")
+    else:
+        st.markdown("🦆 **Sequência atual: Empate**")
 
 # --- dashboard gráfico ---
 if pagina == "Dashboard Gráfico":
@@ -220,8 +236,9 @@ if pagina == "Dashboard Gráfico":
 
     st.subheader("Diferença de Pontos por Rodada")
     fig3 = px.bar(df_vitorias, x='rodada', y='diferenca', color='vencedor',
-                  color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77'},
-                  text='diferenca')
+                color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77', 'empate': '#888888'},
+                text='diferenca')
+
     fig3.update_layout(plot_bgcolor='#0e1117', paper_bgcolor='#0e1117', font_color='white')
     st.plotly_chart(fig3, use_container_width=True)
 
@@ -247,7 +264,7 @@ if pagina == "Dashboard Gráfico":
 
     df_pivot = vitorias_por_dia.pivot_table(index='rodada', columns='vencedor', values='vitorias', fill_value=0)
 
-    for jogador in df['jogador'].unique():
+    for jogador in list(df['jogador'].unique()) + ['empate']:
         if jogador not in df_pivot.columns:
             df_pivot[jogador] = 0
 
@@ -262,7 +279,7 @@ if pagina == "Dashboard Gráfico":
 
     fig4 = px.line(df_evolucao_corrigido, x='rodada', y='vitorias_acumuladas', color='jogador',
                 labels={'rodada': 'Rodada da Partida', 'vitorias_acumuladas': 'Vitórias Acumuladas', 'jogador': 'Jogador'},
-                color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77'},
+                color_discrete_map={'henrique': '#FFB700', 'silvana': '#083D77', 'empate': '#888888'},
                 markers=True)
 
     fig4.update_layout(
@@ -287,7 +304,12 @@ if pagina == "Dashboard Gráfico":
         henrique_pontos = grupo[grupo['jogador'] == 'henrique']['pontos'].values[0]
         data = grupo['data'].iloc[0].date()  # só a data sem hora
 
-        vencedor = 'henrique' if henrique_pontos > silvana_pontos else 'silvana'
+        if henrique_pontos > silvana_pontos:
+            vencedor = 'henrique'
+        elif silvana_pontos > henrique_pontos:
+            vencedor = 'silvana'
+        else:
+            vencedor = 'empate'
         diferenca = abs(henrique_pontos - silvana_pontos)
 
         historico.append({
