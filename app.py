@@ -101,8 +101,9 @@ df_vitorias['data'] = df_vitorias['data'].dt.normalize()
 vitorias = df_vitorias['vencedor'].value_counts().reset_index()
 vitorias.columns = ['jogador', 'vitórias']
 pontos_totais = df.groupby('jogador')['pontos'].sum().reset_index()
-maior_dif = df_vitorias[df_vitorias['diferenca'] > 0].loc[df_vitorias['diferenca'].idxmax()]
-menor_dif = df_vitorias[df_vitorias['diferenca'] > 0].loc[df_vitorias['diferenca'].idxmin()]
+
+maior_dif = df_vitorias.loc[df_vitorias['diferenca'] > 0].loc[df_vitorias[df_vitorias['diferenca'] > 0]['diferenca'].idxmax()]
+menor_dif = df_vitorias.loc[df_vitorias['diferenca'] > 0].loc[df_vitorias[df_vitorias['diferenca'] > 0]['diferenca'].idxmin()]
 
 def calcular_maior_sequencia(nome):
     seq_max = atual = 0
